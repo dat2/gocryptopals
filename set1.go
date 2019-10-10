@@ -59,3 +59,15 @@ func HexToBase64(s []byte) ([]byte, error) {
 	}
 	return result, nil
 }
+
+func FixedXor(a, b []byte) ([]byte, error) {
+	if len(a) != len(b) {
+		return nil, fmt.Errorf("Length of %d != %d", len(a), len(b))
+	}
+
+	result := make([]byte, len(a))
+	for i := range a {
+		result[i] = a[i] ^ b[i]
+	}
+	return result, nil
+}
