@@ -2,6 +2,7 @@ package cryptopals
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 )
 
@@ -26,10 +27,7 @@ func TestHexToBase64(t *testing.T) {
 			t.Errorf("EncodeHex(%s) returned err: %s", table.input, err)
 		}
 
-		actual, err := HexToBase64(input)
-		if err != nil {
-			t.Errorf("HexToBase64(%s) returned err: %s", table.input, err)
-		}
+		actual := HexToBase64(input)
 		if !bytes.Equal(table.expected, actual) {
 			t.Errorf("HexToBase64(%s) returned '%s', expecting '%s'", table.input, actual, table.expected)
 		}
@@ -47,24 +45,49 @@ func TestFixedXor(t *testing.T) {
 	}
 
 	for _, table := range tables {
-		a_hex, err := EncodeHex(table.a)
+		aHex, err := EncodeHex(table.a)
 		if err != nil {
 			t.Errorf("EncodeHex(%s) returned err: %s", table.a, err)
 		}
 
-		b_hex, err := EncodeHex(table.b)
+		bHex, err := EncodeHex(table.b)
 		if err != nil {
 			t.Errorf("EncodeHex(%s) returned err: %s", table.b, err)
 		}
 
-		expected_hex, err := EncodeHex(table.expected)
+		expectedHex, err := EncodeHex(table.expected)
 		if err != nil {
 			t.Errorf("EncodeHex(%s) returned err: %s", table.expected, err)
 		}
 
-		actual_hex, err := FixedXor(a_hex, b_hex)
-		if !bytes.Equal(expected_hex, actual_hex) {
-			t.Errorf("FixedXor(%s, %s) returned '%s', expecting '%s'", table.a, table.b, table.expected, actual_hex)
+		actualHex, err := FixedXor(aHex, bHex)
+		if !bytes.Equal(expectedHex, actualHex) {
+			t.Errorf("FixedXor(%s, %s) returned '%s', expecting '%s'", table.a, table.b, table.expected, actualHex)
 		}
+	}
+}
+
+func TestDecodeSingle(t *testing.T) {
+	type args struct {
+		in []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want []byte
+	}{
+		// TODO: Add test cases.
+		{"main", args{[]byte("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")}, []byte("Cooking MC's like a pound of bacon")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inHex, err := EncodeHex(tt.args.in)
+			if err != nil {
+				t.Errorf("EncodeHex() returned err: %v", err)
+			}
+			if got, err := DecodeSingle(inHex); !reflect.DeepEqual(got, tt.want) || err != nil {
+				t.Errorf("DecodeSingle() = (%v, %v), want %v", string(got), err, tt.want)
+			}
+		})
 	}
 }

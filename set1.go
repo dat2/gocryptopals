@@ -1,8 +1,11 @@
 package cryptopals
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
+	"sort"
+	"unicode"
 )
 
 func EncodeHex(src []byte) ([]byte, error) {
@@ -33,20 +36,20 @@ func roundToNearestMultiple(i, multiple int) int {
 	return ((i + multiple - 1) / multiple) * multiple
 }
 
-func HexToBase64(s []byte) ([]byte, error) {
-	input_len := len(s)
+func HexToBase64(s []byte) []byte {
+	inputLen := len(s)
 
 	// ensure it gets rounded to the nearest multiple of 4
-	result := make([]byte, roundToNearestMultiple(input_len*4/3, 4))
+	result := make([]byte, roundToNearestMultiple(inputLen*4/3, 4))
 
 	j := 0
-	for i := 0; i < input_len; i += 3 {
+	for i := 0; i < inputLen; i += 3 {
 		result[j] = encodeBase64(s[i] >> 2)
-		if i+2 < input_len {
+		if i+2 < inputLen {
 			result[j+1] = encodeBase64(((s[i] & 0x03) << 4) ^ (s[i+1] >> 4))
 			result[j+2] = encodeBase64(((s[i+1] & 0x0F) << 2) ^ (s[i+2] >> 6))
 			result[j+3] = encodeBase64((s[i+2] & 0x3F))
-		} else if i+1 < input_len {
+		} else if i+1 < inputLen {
 			result[j+1] = encodeBase64(((s[i] & 0x03) << 4) ^ (s[i+1] >> 4))
 			result[j+2] = encodeBase64(((s[i+1] & 0x0F) << 2))
 			result[j+3] = byte('=')
@@ -57,7 +60,7 @@ func HexToBase64(s []byte) ([]byte, error) {
 		}
 		j += 4
 	}
-	return result, nil
+	return result
 }
 
 func FixedXor(a, b []byte) ([]byte, error) {
@@ -70,4 +73,48 @@ func FixedXor(a, b []byte) ([]byte, error) {
 		result[i] = a[i] ^ b[i]
 	}
 	return result, nil
+}
+
+func countLetterFrequency(in []byte) map[byte]int {
+	letters := make(map[byte]int)
+	for _, b := range in {
+		if unicode.IsLetter(rune(b)) {
+			letters[b] = letters[b] + 1
+		}
+	}
+	return letters
+}
+
+type scoredResult struct {
+	decoded []byte
+	score   int
+}
+
+func newScoredResult(in []byte, b byte) (scoredResult, error) {
+	score := 0
+	decoded, err := FixedXor(in, bytes.Repeat([]byte{b}, len(in)))
+	if err != nil {
+		return scoredResult{}, err
+	}
+	freq := countLetterFrequency(decoded)
+	for _, count := range freq {
+		score += count
+	}
+	return scoredResult{decoded, score}, nil
+}
+
+func DecodeSingle(in []byte) ([]byte, error) {
+	scored := make([]scoredResult, 52)
+	for b := byte('A'); b < byte('z'); b++ {
+		result, err := newScoredResult(in, b)
+		if err != nil {
+			return []byte{}, err
+		}
+		scored = append(scored, result)
+	}
+	// sort in reverse
+	sort.SliceStable(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
+	})
+	return scored[0].decoded, nil
 }
