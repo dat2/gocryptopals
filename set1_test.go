@@ -1,8 +1,7 @@
 package cryptopals
 
 import (
-	"bytes"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -23,71 +22,34 @@ func TestHexToBase64(t *testing.T) {
 
 	for _, table := range tables {
 		input, err := EncodeHex(table.input)
-		if err != nil {
-			t.Errorf("EncodeHex(%s) returned err: %s", table.input, err)
-		}
-
+		assert.Nil(t, err)
 		actual := HexToBase64(input)
-		if !bytes.Equal(table.expected, actual) {
-			t.Errorf("HexToBase64(%s) returned '%s', expecting '%s'", table.input, actual, table.expected)
-		}
+		assert.Equal(t, table.expected, actual)
 	}
 }
 
 func TestFixedXor(t *testing.T) {
-	tables := []struct {
-		a        []byte
-		b        []byte
-		expected []byte
-	}{
-		// https://cryptopals.com/sets/1/challenges/2
-		{a: []byte("1c0111001f010100061a024b53535009181c"), b: []byte("686974207468652062756c6c277320657965"), expected: []byte("746865206b696420646f6e277420706c6179")},
-	}
+	// https://cryptopals.com/sets/1/challenges/2
+	a, err := EncodeHex([]byte("1c0111001f010100061a024b53535009181c"))
+	assert.Nil(t, err)
 
-	for _, table := range tables {
-		aHex, err := EncodeHex(table.a)
-		if err != nil {
-			t.Errorf("EncodeHex(%s) returned err: %s", table.a, err)
-		}
+	b, err := EncodeHex([]byte("686974207468652062756c6c277320657965"))
+	assert.Nil(t, err)
 
-		bHex, err := EncodeHex(table.b)
-		if err != nil {
-			t.Errorf("EncodeHex(%s) returned err: %s", table.b, err)
-		}
+	expected, err := EncodeHex([]byte("746865206b696420646f6e277420706c6179"))
+	assert.Nil(t, err)
 
-		expectedHex, err := EncodeHex(table.expected)
-		if err != nil {
-			t.Errorf("EncodeHex(%s) returned err: %s", table.expected, err)
-		}
-
-		actualHex, err := FixedXor(aHex, bHex)
-		if !bytes.Equal(expectedHex, actualHex) {
-			t.Errorf("FixedXor(%s, %s) returned '%s', expecting '%s'", table.a, table.b, table.expected, actualHex)
-		}
-	}
+	actualHex, err := FixedXor(a, b)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actualHex)
 }
 
 func TestDecodeSingle(t *testing.T) {
-	type args struct {
-		in []byte
-	}
-	tests := []struct {
-		name string
-		args args
-		want []byte
-	}{
-		// TODO: Add test cases.
-		{"main", args{[]byte("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")}, []byte("Cooking MC's like a pound of bacon")},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			inHex, err := EncodeHex(tt.args.in)
-			if err != nil {
-				t.Errorf("EncodeHex() returned err: %v", err)
-			}
-			if got, err := DecodeSingle(inHex); !reflect.DeepEqual(got, tt.want) || err != nil {
-				t.Errorf("DecodeSingle() = (%v, %v), want %v", string(got), err, tt.want)
-			}
-		})
-	}
+	// https://cryptopals.com/sets/1/challenges/3
+	challenge, err := EncodeHex([]byte("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"))
+	assert.Nil(t, err)
+
+	actual, err := DecodeSingle(challenge)
+	assert.Nil(t, err)
+	assert.Equal(t, actual, []byte("Cooking MC's like a pound of bacon"))
 }

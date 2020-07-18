@@ -90,29 +90,42 @@ type scoredResult struct {
 	score   int
 }
 
-func newScoredResult(in []byte, b byte) (scoredResult, error) {
+func newScoredResult(decoded []byte) scoredResult {
 	score := 0
-	decoded, err := FixedXor(in, bytes.Repeat([]byte{b}, len(in)))
-	if err != nil {
-		return scoredResult{}, err
-	}
 	freq := countLetterFrequency(decoded)
 	for _, count := range freq {
 		score += count
 	}
-	return scoredResult{decoded, score}, nil
+	return scoredResult{decoded, score}
 }
 
 func DecodeSingle(in []byte) ([]byte, error) {
 	scored := make([]scoredResult, 52)
 	for b := byte('A'); b < byte('z'); b++ {
-		result, err := newScoredResult(in, b)
+		decoded, err := FixedXor(in, bytes.Repeat([]byte{b}, len(in)))
+		if err != nil {
+			return []byte{}, fmt.Errorf("failed to xor: %w", err)
+		}
+		scored = append(scored, newScoredResult(decoded))
+	}
+	// sort in reverse
+	sort.SliceStable(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
+	})
+	return scored[0].decoded, nil
+}
+
+func FindEncoded(in [][]byte) ([]byte, error) {
+	results := make([][]byte, len(in))
+	scored := make([]scoredResult, len(in))
+	for i, slice := range in {
+		result, err := DecodeSingle(slice)
 		if err != nil {
 			return []byte{}, err
 		}
-		scored = append(scored, result)
+		results[i] = result
+		scored[i] = newScoredResult(result)
 	}
-	// sort in reverse
 	sort.SliceStable(scored, func(i, j int) bool {
 		return scored[i].score > scored[j].score
 	})
